@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSC Skill Calculator</title>
+<style>
+  body{font-family:sans-serif;background:#1b1b1b;color:#eee;margin:0;padding:14px}
+  h2{margin:0 0 10px}
+  label{display:block;margin:10px 0 3px;color:#aaa;font-size:14px}
+  input{width:100%;box-sizing:border-box;padding:10px;font-size:16px;background:#2a2a2a;color:#fff;border:1px solid #444;border-radius:6px}
+  .row{display:flex;gap:10px}.row>div{flex:1}
+  #out{margin-top:16px;padding:12px;background:#262626;border-radius:8px;line-height:1.7;font-size:17px}
+  b{color:#ffd24d}
+  details{margin-top:16px} table{border-collapse:collapse;width:100%} td,th{padding:4px 8px;border-bottom:1px solid #333;text-align:right}
+</style></head><body>
+<h2>Skill calculator</h2>
+<div class="row">
+  <div><label>Current level</label><input id="cl" type="number" min="1" max="99" value="1"></div>
+  <div><label>…or current XP</label><input id="cx" type="number" min="0" placeholder="optional"></div>
+</div>
+<div class="row">
+  <div><label>Target level</label><input id="tl" type="number" min="2" max="99" value="99"></div>
+  <div><label>XP per action</label><input id="xa" type="number" step="any" min="0" placeholder="e.g. 25"></div>
+</div>
+<label>Server XP rate multiplier (your Cabbage config, 1 = default)</label>
+<input id="rate" type="number" step="any" min="0.01" value="1">
+<div id="out"></div>
+<details><summary>XP table</summary><table id="tbl"></table></details>
+<script>
+  // Classic RS XP curve (same as RS2): xp(L) = floor( sum_{i=1}^{L-1} floor(i + 300*2^(i/7)) / 4 )
+  const XP=[0,0]; let acc=0;
+  for(let l=1;l<=99;l++){acc+=Math.floor(l+300*Math.pow(2,l/7)); XP[l+1]=Math.floor(acc/4);}
+  const $=id=>document.getElementById(id), fmt=n=>Math.round(n).toLocaleString();
+  function calc(){
+    const cl=Math.min(99,Math.max(1,+$('cl').value||1)), tl=Math.min(99,Math.max(1,+$('tl').value||99));
+    const cx=$('cx').value!==''?+$('cx').value:XP[cl];
+    const tx=XP[tl], need=Math.max(0,tx-cx), xa=+$('xa').value, rate=+$('rate').value||1;
+    let h=`Target level <b>${tl}</b> = <b>${fmt(tx)}</b> XP<br>XP needed: <b>${fmt(need)}</b>`;
+    if(xa>0){h+=`<br>Actions needed: <b>${fmt(Math.ceil(need/(xa*rate)))}</b> <small>(${xa*rate} XP each)</small>`;}
+    $('out').innerHTML=h;
+    try{localStorage.setItem('rate',$('rate').value)}catch(e){}
+  }
+  try{const r=localStorage.getItem('rate'); if(r)$('rate').value=r}catch(e){}
+  ['cl','cx','tl','xa','rate'].forEach(i=>$(i).addEventListener('input',calc));
+  let t='<tr><th>Lvl</th><th>XP</th></tr>'; for(let l=1;l<=99;l++)t+=`<tr><td>${l}</td><td>${fmt(XP[l])}</td></tr>`;
+  $('tbl').innerHTML=t; calc();
+</script></body></html>
